@@ -1,0 +1,170 @@
+---
+title: "Quickstart"
+description: "Install the MCP, add the collector, and go from first trace to first result."
+icon: "rocket"
+---
+
+Five steps, start to finish: connect an MCP client so your AI does the driving, add the collector so real sessions start streaming, then build an environment, author an eval set, and read your first result. You can run steps 3–5 from your MCP client, the [CLI](/cli), or the dashboard; they all hit the same backend.
+
+<Steps>
+  <Step title="Install the MCP">
+    Mirrors hosts an MCP server that exposes the full product surface (build, explore, query, and eval environments), so any MCP client can drive it. Point your client at the hosted endpoint; sign-in happens in the browser on first use, no API key to paste.
+
+    ```text
+    https://api.runmirrors.com/mcp
+    ```
+
+    <Tabs>
+      <Tab title="Claude Code">
+        ```bash
+        claude mcp add --transport http mirrors https://api.runmirrors.com/mcp
+        ```
+
+        Then run `/mcp` → `mirrors` → **Authenticate** via browser.
+      </Tab>
+      <Tab title="Cursor">
+        Add to `~/.cursor/mcp.json`:
+
+        ```json
+        {
+          "mcpServers": {
+            "mirrors": {
+              "url": "https://api.runmirrors.com/mcp"
+            }
+          }
+        }
+        ```
+
+        Cursor shows **Needs login** on the server. Click it to sign in via the browser.
+      </Tab>
+      <Tab title="VS Code">
+        ```bash
+        code --add-mcp '{"name":"mirrors","type":"http","url":"https://api.runmirrors.com/mcp"}'
+        ```
+
+        VS Code prompts to trust the server, then opens the browser to sign in.
+      </Tab>
+      <Tab title="ChatGPT">
+        On chatgpt.com:
+
+        1. **Settings → Apps & Connectors → Advanced** → enable **Developer mode**
+        2. **Create** → name it *Mirrors*, MCP server URL `https://api.runmirrors.com/mcp`
+        3. Authentication: **OAuth** → Create, then connect
+
+        Sign-in opens in the browser. Needs a Plus/Pro/Business plan (web).
+      </Tab>
+      <Tab title="Codex">
+        ```bash
+        codex mcp add mirrors --url https://api.runmirrors.com/mcp
+        codex mcp login mirrors
+        ```
+
+        `login` opens the browser to sign in; tokens refresh automatically.
+      </Tab>
+      <Tab title="Claude / Desktop">
+        On claude.ai or Claude Desktop:
+
+        1. **Settings → Connectors → Add custom connector**
+        2. Paste `https://api.runmirrors.com/mcp`
+        3. Click **Add**, then **Connect**
+
+        Connect opens the browser to sign in and approve. Works on free and paid plans.
+      </Tab>
+    </Tabs>
+
+    Every other client (Zed, Warp, Goose, Cline, Windsurf, …), the one-click installs, and headless/CI setups with a workspace key are on the [MCP server](/mcp-server) page.
+  </Step>
+
+  <Step title="Install the collector">
+    The collector streams your agent's real production traces to Mirrors, the raw material every environment is built from. First mint a workspace API key (`mk_live_…`) at [runmirrors.com](https://www.runmirrors.com/login) under **Settings → API keys**, then install the collector and initialize it before your agent runs. It auto-instruments LangChain/LangGraph, Anthropic, and OpenAI, ships traces in the background, and never raises into your app.
+
+    <CodeGroup>
+    ```python Python
+    # pip install mirrorkit
+    import mirrorkit
+    mirrorkit.init(api_key="mk_live_...", project="my-agent")
+    ```
+
+    ```typescript TypeScript
+    // npm install mirrorkit
+    import * as mirrorkit from 'mirrorkit';
+    mirrorkit.init({ apiKey: 'mk_live_...', project: 'my-agent' });
+    ```
+
+    ```go Go
+    // go get github.com/ai-singhal/mirrorkit-go
+    mirrorkit.Init(mirrorkit.Options{APIKey: "mk_live_...", Project: "my-agent"})
+    ```
+    </CodeGroup>
+
+    Run your agent normally and traces start streaming. Details per language: [Python](/collectors/python), [TypeScript](/collectors/typescript), [Go](/collectors/go).
+  </Step>
+
+  <Step title="Build your first environment">
+    Turn the collected traces into an environment: a schema, a seeded database, and bound tools, a runnable copy of your agent's world, scored per tool for [fidelity](/how-it-works#fidelity-and-evidence-honesty). Ask your MCP client, or use the [CLI](/cli):
+
+    <CodeGroup>
+    ```text MCP client
+    Build a mirror from my "my-agent" project and call it my-agent.
+    ```
+
+    ```bash CLI
+    pip install "mirrorkit[cli]"
+    mirrors login                                   # paste your mk_live_… key
+    mirrors build --project my-agent --name my-agent
+    ```
+    </CodeGroup>
+
+    You can also build from the dashboard under **Ingest → Build**. Prefer files over a live stream? `mirrors build traces.jsonl --name my-agent` ingests a trace log directly.
+  </Step>
+
+  <Step title="Create your first eval set">
+    An eval set is the suite of sessions replayed against every change. Auto-author cases from your real traces, then keep the ones that matter:
+
+    <CodeGroup>
+    ```text MCP client
+    Generate an eval set for my-agent and save it as "smoke".
+    ```
+
+    ```bash CLI
+    mirrors eval generate my-agent --save-as smoke
+    ```
+    </CodeGroup>
+
+    Hand-write or extend cases with `mirrors eval create my-agent --name smoke --from cases.json`. See [How it works](/how-it-works) for what a case scores.
+  </Step>
+
+  <Step title="View your first result">
+    Run the eval set and read the result: per-tool coverage and accuracy, plus any session that would have broken.
+
+    <CodeGroup>
+    ```text MCP client
+    Run the "smoke" eval set for my-agent and show me the result.
+    ```
+
+    ```bash CLI
+    mirrors eval run <eval-set-id>     # kick off the run
+    mirrors run show <run-id>          # inspect scores + traces
+    ```
+    </CodeGroup>
+
+    Or open the run in the dashboard. From here, wire the same eval set into CI so every PR that touches your agent replays it. See [CI gate](/ci-gate).
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="How it works" icon="lightbulb" href="/how-it-works">
+    Fidelity scoring, deterministic seeding, business context, and evals.
+  </Card>
+  <Card title="MCP server" icon="plug" href="/mcp-server">
+    Every client, one-click installs, and headless setups.
+  </Card>
+  <Card title="CLI" icon="terminal" href="/cli">
+    The `mirrors` command: full parity with the web app.
+  </Card>
+  <Card title="CI gate" icon="code-branch" href="/ci-gate">
+    Block regressions at the pull request, Vercel-style.
+  </Card>
+</CardGroup>

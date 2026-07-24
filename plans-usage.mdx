@@ -1,0 +1,40 @@
+---
+title: "Plans & usage"
+description: "Free, Team, and Enterprise pricing, how replay-minutes are counted, and where to watch usage."
+icon: "gauge-high"
+---
+
+Mirrors meters work in **replay-minutes**: the minutes an agent spends replaying a session, running an eval, or querying an environment. Building and exploring environments is free; the meter runs only while an agent executes.
+
+## Plans
+
+| Plan | What you get |
+|---|---|
+| **Free** | $0/month. Includes 60 replay-minutes each month, then $0.20 per replay-minute. A payment method is saved at signup, but $0 is due today. Build unlimited environments and use the CI gate and public `/v1` API. |
+| **Team** | $249/month. Includes 2,000 replay-minutes each month, then $0.15 per replay-minute, plus priority support and onboarding. |
+| **Enterprise** | Volume pricing, SSO and role controls, security review, and on-premises or BYOC options. [Contact us](https://www.runmirrors.com/contact). |
+
+See the current public prices at [runmirrors.com/pricing](https://www.runmirrors.com/pricing). Your plan, included usage, and metered usage are visible in the dashboard under **Billing**.
+
+## Watch your usage
+
+The same numbers are exposed on every surface:
+
+```bash
+mirrors usage        # CLI: replay-minutes used vs. included allowance
+```
+
+```bash
+curl https://api.runmirrors.com/v1/usage \
+  -H "Authorization: Bearer mk_live_..."
+```
+
+The dashboard sidebar also shows a near-limit meter as you approach your monthly allowance.
+
+## When you use the included minutes
+
+On Free, usage after the included 60 replay-minutes is billed at $0.20 per minute. Team includes 2,000 replay-minutes and bills additional usage at $0.15 per minute. Included minutes reset each month; your environments and history remain available.
+
+<Tip>
+  Rate limits are separate from the plan allowance: `/v1` requests are also rate-limited per workspace and return `429` when exceeded. See the [API introduction](/api-reference/introduction).
+</Tip>

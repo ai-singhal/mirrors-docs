@@ -1,0 +1,37 @@
+---
+title: "CI gate"
+description: "Block agent regressions at the pull request, Vercel-style."
+icon: "code-branch"
+---
+
+The CI gate replays your eval set against every pull request that touches your agent, and reports a **Mirrors eval gate** status check on the PR. Make the check required and regressions block the merge before they reach a customer.
+
+## How it works
+
+On each PR against your base branch, Mirrors fetches your agent's code at the configured path, runs the bound eval set against your mirror with the **candidate** agent, and diffs the results against the **baseline** (the current agent). The check lands as in-progress → awaiting review, with a candidate-vs-baseline diff in the dashboard (`/ci/<check-id>`) where you approve or reject, flipping the GitHub check.
+
+## Set it up
+
+<Steps>
+  <Step title="Connect GitHub">
+    In the dashboard, go to **Quickstart → CI eval gate** and click **Connect GitHub**. This installs the Mirrors GitHub App; GitHub redirects you back with the installation already linked to your workspace.
+  </Step>
+  <Step title="Bind a repo">
+    Pick the repository and bind it to:
+    - a **mirror** (the twin to replay against),
+    - a **validation eval set** (what runs on each PR),
+    - the **agent path** in the repo (e.g. `agent/agent.py`), which the webhook fetches on each PR,
+    - the **base branch** (default `main`).
+  </Step>
+  <Step title="Make it required">
+    Click **Make required** on the repo row to turn **Mirrors eval gate** into a required status check (needs the App's Administration permission), or add it manually under the repo's **Settings → Branches**. Merges now block until the gate passes review.
+  </Step>
+</Steps>
+
+## Reviewing a check
+
+Each check links to a dashboard page showing the candidate-vs-baseline diff per eval case. **Approve** marks the check green; **Reject** fails it. A regression is a decision, not a surprise.
+
+<Note>
+  An installation can only be linked to one workspace. If you see "already linked to another workspace", the GitHub account was claimed elsewhere. Connect from that workspace or use a different GitHub org.
+</Note>

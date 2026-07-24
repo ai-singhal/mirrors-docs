@@ -1,0 +1,60 @@
+---
+title: "Collect traces"
+description: "POST /api/collect: the trace ingest endpoint the collectors speak."
+icon: "inbox"
+---
+
+The [mirrorkit collectors](/collectors/python) batch traces and POST them here in the background. If you have your own pipeline (an existing observability platform, a custom framework, a language without a collector), you can speak the wire format directly.
+
+## Request
+
+```text
+POST https://api.runmirrors.com/api/collect
+Authorization: Bearer mk_live_...
+Content-Type: application/json
+```
+
+```json
+{
+  "project": "my-agent",
+  "traces": [
+    {
+      "id": "abc",
+      "model": "gpt-4o",
+      "messages": [
+        { "role": "user", "content": "What's the weather in Paris?" },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            { "id": "call_1", "function": { "name": "get_weather", "arguments": "{\"city\": \"Paris\"}" } }
+          ]
+        },
+        { "role": "tool", "tool_call_id": "call_1", "content": "18C, sunny" },
+        { "role": "assistant", "content": "It's 18C and sunny in Paris." }
+      ]
+    }
+  ]
+}
+```
+
+### Fields
+
+<ParamField body="project" type="string" required>
+  The project the traces belong to. Mirrors are built per project, so keep one project per agent.
+</ParamField>
+
+<ParamField body="traces" type="array" required>
+  A batch of traces. Each trace has an `id` (string, unique per trace), an optional `model`, and `messages`, an OpenAI-style chat array (`system` / `user` / `assistant` / `tool` roles, with `tool_calls` on assistant messages and `tool_call_id` on tool results).
+</ParamField>
+
+## Behavior
+
+- Batching is up to you; the official collectors default to 50 traces per POST, flushed every 2 seconds.
+- Ingest is forgiving about `messages`: alongside the OpenAI-style array above, it detects and flattens Vercel AI SDK messages (`UIMessage` `parts`, `ModelMessage` content blocks, a `generateText` `steps` result), Anthropic-block agent-loop transcripts, and OTLP GenAI exports, so you can hand it what your app already persists.
+- Requests are authenticated by workspace key; traces land in that workspace under `project`.
+- The collectors retry failed batches (non-2xx / network errors) a couple of times, then drop them. Ingest is designed to never break the instrumented app.
+
+<Tip>
+  Tool calls and their results are the most valuable part of a trace: they're what Mirrors uses to infer your agent's world. Include them whenever you can.
+</Tip>

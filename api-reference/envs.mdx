@@ -1,0 +1,110 @@
+---
+title: "Environments"
+description: "List, inspect, and query your mirrors over /v1."
+icon: "server"
+---
+
+All `/v1` endpoints take `Authorization: Bearer mk_live_…` and are scoped to the key's workspace. See [Introduction](/api-reference/introduction) for auth, rate limits, and versioning.
+
+## GET /v1/envs
+
+List the workspace's environments (mirrors), newest first.
+
+```bash
+curl https://api.runmirrors.com/v1/envs \
+  -H "Authorization: Bearer mk_live_..."
+```
+
+Returns an array of environment summaries:
+
+```json
+[
+  {
+    "id": "env_…",
+    "name": "airline",
+    "slug": "airline",
+    "status": "ready",
+    "framework": "langgraph",
+    "n_traces": 412,
+    "n_tools": 9,
+    "schema_source": "traces",
+    "covered_pct": 88.0,
+    "simulated_pct": 12.0,
+    "has_agent": true,
+    "language": "python"
+  }
+]
+```
+
+## GET /v1/envs/\{slug\}
+
+Fetch one environment by slug. Returns the same summary shape as the list endpoint. Slugs from other workspaces return `404`, never another tenant's data.
+
+```bash
+curl https://api.runmirrors.com/v1/envs/airline \
+  -H "Authorization: Bearer mk_live_..."
+```
+
+## POST /v1/envs/\{slug\}/query
+
+Run a one-shot query against the mirror and get back the agent's response plus the full trace. This is the same run path as the Playground: entitlement and sandbox quota gates, deterministic seeding, and per-workspace rate limiting all apply.
+
+```bash
+curl -X POST https://api.runmirrors.com/v1/envs/airline/query \
+  -H "Authorization: Bearer mk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Cancel booking BK-4471", "seed": 42}'
+```
+
+### Body
+
+<ParamField body="input" type="string" required>
+  The user message to run against the mirror.
+</ParamField>
+
+<ParamField body="seed_instructions" type="string">
+  Optional world-seeding instructions (e.g. "a customer with one refundable booking"). The mirror's world is constructed to satisfy them.
+</ParamField>
+
+<ParamField body="seed" type="integer">
+  World seed. The same seed + instructions produce a byte-identical world. Omit to draw a fresh seed. It's returned in the result so you can replay.
+</ParamField>
+
+<ParamField body="auto_seed" type="boolean" default="false">
+  Derive seed instructions from the query itself when none are given.
+</ParamField>
+
+<ParamField body="model" type="string">
+  Model id to run the agent on. Omit for the environment default.
+</ParamField>
+
+### Response
+
+```json
+{
+  "response": "Done, BK-4471 is cancelled.",
+  "trace": [
+    { "kind": "tool", "label": "cancel_booking", "dur": "0.4s", "detail": "{\"id\": \"BK-4471\"}" },
+    { "kind": "ok", "label": "final answer", "dur": "1.1s", "detail": "" }
+  ],
+  "n_spans": 2,
+  "fidelity": { "high": 2, "low": 0 },
+  "seed": 42,
+  "seeded": true,
+  "world_hash": "sha256:…",
+  "pinned": { "bookings": ["BK-4471"] },
+  "seed_instructions": "a customer with booking BK-4471",
+  "seed_note": null
+}
+```
+
+The `seed`, `world_hash`, and effective `seed_instructions` are reproducibility receipts: feed the same seed and instructions back in and the world (and run) is identical.
+
+## GET /v1/usage
+
+Task-minutes used vs. your plan allowance for the workspace, the same numbers as `mirrors usage` and the dashboard.
+
+```bash
+curl https://api.runmirrors.com/v1/usage \
+  -H "Authorization: Bearer mk_live_..."
+```
