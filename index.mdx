@@ -1,0 +1,70 @@
+---
+title: "What is Mirrors?"
+description: "The staging environment your AI agents never had."
+icon: "house"
+---
+
+Mirrors rebuilds the systems your AI agents call, then replays real sessions against each prompt, tool, or model change before it reaches production. Nothing real gets touched.
+
+Your agent takes real actions on real systems, so testing changes against live production is slow, risky, and irreproducible. Mirrors turns traces, agent code, tool code, or docs into a runnable staging environment: a seeded database plus bound tools that behave like the systems your agent calls. Agents replay against that environment, never live systems, so even destructive flows such as refunds, deletes, and sends are safe to test.
+
+## When to use Mirrors
+
+Mirrors is built for agents that **act** (call tools, hit APIs, touch data), where a change can break behavior your unit tests never see. Reach for it when:
+
+- Your agent calls tools against real systems, and testing a change against production is slow, risky, or impossible to reproduce.
+- You want every prompt, model, or code change checked against real recorded sessions before it merges.
+- You need to replay destructive flows (refunds, deletes, sends) safely and repeatedly.
+- You want a reproducible environment: the same seed produces the same world for every run.
+
+If your agent only produces text (no tools, no side effects), a plain eval script over model outputs is probably sufficient. Mirrors earns its keep when there is an environment to get right.
+
+## How it works
+
+<Steps>
+  <Step title="Provide what you already have">
+    Start from traces, agent code, tool code, or docs. The optional [mirrorkit collector](/collectors/python) keeps the environment current from live sessions.
+  </Step>
+  <Step title="Mirrors builds the environment">
+    Schema, fabricated seed data, and tool behavior become a runnable copy of the systems your agent calls, with [fidelity](/how-it-works#fidelity-and-evidence-honesty) measured against real traces.
+  </Step>
+  <Step title="Replay any session against any change">
+    From the dashboard, [CLI](/cli), [MCP client](/mcp-server), or [CI](/ci-gate). Same session, two versions of the agent, one caught regression. Production is never touched.
+  </Step>
+</Steps>
+
+## Start here
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Connect your agent and gate merges in CI in a few minutes.
+  </Card>
+  <Card title="How it works" icon="lightbulb" href="/how-it-works">
+    Environments, fidelity scoring, stable seeding, and evals.
+  </Card>
+  <Card title="MCP server" icon="plug" href="/mcp-server">
+    Drive Mirrors from Claude Code, Cursor, VS Code, ChatGPT, and more.
+  </Card>
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    The versioned /v1 API, authenticated by workspace keys.
+  </Card>
+</CardGroup>
+
+## What you can do with it
+
+- **Catch regressions before they ship**: replay real sessions against every change and see exactly what would have broken.
+- **Reproduce the bug that paged you** on demand in a stable, seeded environment.
+- **Test risky and destructive flows** (refunds, deletes, sends) safely against the environment instead of live systems.
+- **Gate CI on replays** so every change is checked before it merges.
+- **Measure whether an agent change is actually better** with per-tool coverage and accuracy scores.
+- **Drive environments from your own code** over a versioned [/v1 API](/api-reference/introduction) authenticated by workspace keys.
+
+<Note>
+  Privacy by construction: the environment keeps only the shape of which entities exist and how they connect. Every actual value is fabricated, so redacted sessions work fine.
+</Note>
+
+## Next steps
+
+- Work through the [Quickstart](/quickstart): MCP client to first eval result in five steps.
+- Understand the model in [How it works](/how-it-works).
+- Reading with an AI assistant? These docs are [built for that](/for-agents): every page has a raw-markdown twin, an llms.txt index, and one-click handoff to Claude or ChatGPT.

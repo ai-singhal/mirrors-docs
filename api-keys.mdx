@@ -1,0 +1,36 @@
+---
+title: "API keys & authentication"
+description: "Workspace keys (mk_live_…): where to mint them and everywhere they work."
+icon: "key"
+---
+
+One credential drives everything programmatic in Mirrors: the **workspace API key**. Keys start with `mk_live_` and are scoped to a workspace: every trace, environment, and run they touch lands in that workspace and no other.
+
+## Mint a key
+
+1. Sign in at [runmirrors.com](https://www.runmirrors.com/login).
+2. Open **Settings → API keys**.
+3. Click **Create key**, name it after where it will live (e.g. `prod-collector`, `ci`), and copy the `mk_live_…` value.
+
+Treat it like a password: it authenticates as your workspace. Prefer one key per deployment surface so a leaked key can be revoked without rotating everything else.
+
+## Where the key works
+
+| Surface | How to pass it |
+|---|---|
+| [Collectors](/collectors/python) | `mirrorkit.init(api_key="mk_live_…")` (or the TS/Go equivalents) |
+| [CLI](/cli) | `mirrors login`, or `MIRRORS_API_KEY` in CI |
+| [MCP server](/mcp-server), headless | `"headers": { "Authorization": "Bearer mk_live_…" }` |
+| [/v1 API and /api/collect](/api-reference/introduction) | `Authorization: Bearer mk_live_…` |
+
+Interactive MCP use doesn't need a key at all: the hosted server signs you in with browser OAuth. Keys are for code and CI, where no browser is available.
+
+## Scoping and safety
+
+- Everything is workspace-scoped: an environment slug that exists in another workspace returns `404`, never data.
+- Store keys in your secret manager or CI secrets, not in source. The collectors read the endpoint from the environment; keep the key there too.
+- Revoke and re-mint from **Settings → API keys** at any time; a revoked key fails closed with `401`.
+
+<Note>
+  The browser dashboard itself never uses `mk_live_` keys; it authenticates with your user session. Keys exist so machines can act on the workspace's behalf.
+</Note>

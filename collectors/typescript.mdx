@@ -1,0 +1,176 @@
+---
+title: "TypeScript / JavaScript"
+description: "The drop-in trace collector for Node.js agents."
+icon: "node-js"
+---
+
+`mirrorkit` on npm is the TypeScript sibling of the Python package. Point it at your AI SDK / Anthropic / OpenAI / LangChain.js calls and your agent's traces stream to Mirrors with negligible overhead: non-blocking, background-batched, and it never throws into your app.
+
+## Install
+
+```bash
+npm install mirrorkit
+```
+
+Requires **Node ≥ 18** (uses the built-in `fetch`). Zero runtime dependencies: the LLM SDKs are optional peers, instrumented only if present.
+
+## Usage
+
+```typescript
+import * as mirrorkit from 'mirrorkit';
+import Anthropic from '@anthropic-ai/sdk';
+
+mirrorkit.init({ apiKey: 'mk_live_...', project: 'my-agent' });
+
+// Recommended: wrap each client once. Guaranteed capture, no global patching.
+const anthropic = mirrorkit.instrument(new Anthropic());
+
+const res = await anthropic.messages.create({
+  model: 'claude-opus-4-8',
+  max_tokens: 256,
+  messages: [{ role: 'user', content: "What's the weather in Paris?" }],
+});
+```
+
+`init()` also best-effort auto-instruments importable SDKs, so in many setups the `instrument()` call is optional. We recommend `instrument()` anyway: it is immune to the ESM/CJS dual-instance and version-drift issues that make global patching unreliable in JS.
+
+### Options
+
+```typescript
+mirrorkit.init({
+  apiKey: 'mk_live_...',
+  project: 'my-agent',
+  endpoint: 'https://api.runmirrors.com', // optional; else MIRRORKIT_ENDPOINT / MIRROR_ENDPOINT / prod
+  flushIntervalMs: 2000,                  // ms between background flushes
+  maxBatch: 50,                           // max traces per POST
+  maxQueue: 10_000,                       // in-memory cap; oldest dropped past this
+  instrument: true,                       // best-effort auto-patch at init()
+  debug: false,                           // internal debug logs (or MIRRORKIT_DEBUG=1)
+});
+```
+
+## Vercel AI SDK
+
+Wrap the **model**, not the call. Every AI SDK entry point (`generateText`,
+`streamText`, `ToolLoopAgent`, your `useChat` route) runs through the model you
+hand it, so one `instrument()` covers all of them, including the whole tool loop:
+
+```typescript
+import * as mirrorkit from 'mirrorkit';
+import { generateText, gateway } from 'ai';
+
+mirrorkit.init({ apiKey: 'mk_live_...', project: 'my-agent' });
+
+const model = mirrorkit.instrument(gateway('anthropic/claude-sonnet-5'));
+
+const result = await generateText({ model, tools, prompt: 'What's the weather in Paris?' });
+```
+
+Each model call becomes one trace: the cumulative message history (with tool
+calls and their results paired by `toolCallId`) plus the model's reply. A
+multi-step agent run therefore arrives as a sequence of traces whose history
+grows, the same shape our Anthropic and OpenAI instrumentations produce.
+
+Streaming is captured here (`streamText` included): the parts are observed as
+they pass through and assembled at the end, so your stream is untouched.
+
+<Note>
+  `instrument()` is the seam because `ai`'s exports are a frozen ES module
+  namespace with no prototype to patch, so auto-install at `init()` cannot reach
+  them. Wrap the model once, where you construct it.
+</Note>
+
+Already persisting chats (`useChat` messages via `onFinish`, or a `generateText`
+result)? Upload them as-is; Mirrors flattens AI SDK `UIMessage` parts,
+`ModelMessage` content blocks, and `steps` results server-side. See the
+[collect API reference](/api-reference/collect).
+
+## LangChain.js
+
+LangChain.js has no global handler hook, so attach the handler explicitly, either per call or by wrapping the runnable:
+
+```typescript
+// per call:
+await chain.invoke(input, { callbacks: [mirrorkit.handler()] });
+
+// or wrap once:
+const traced = mirrorkit.instrument(chain);
+await traced.invoke(input);
+```
+
+<Warning>
+  LangChain.js support is best-effort. Validate against your pinned `@langchain/core` version. Anthropic and OpenAI are the fully-solid path.
+</Warning>
+
+## Manual logging
+
+For anything not auto-instrumented, enqueue a trace yourself (OpenAI-style messages):
+
+```typescript
+mirrorkit.logTrace(
+  [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: "What's the weather in Paris?" },
+    {
+      role: 'assistant',
+      content: null,
+      tool_calls: [{ id: 'call_1', function: { name: 'get_weather', arguments: '{"city":"Paris"}' } }],
+    },
+    { role: 'tool', tool_call_id: 'call_1', content: '18C, sunny' },
+    { role: 'assistant', content: "It's 18C and sunny in Paris." },
+  ],
+  { model: 'gpt-4o' },
+);
+```
+
+## Custom instrumentation
+
+Providers are pluggable: register your own to trace a framework that isn't covered out of the box:
+
+```typescript
+mirrorkit.register(
+  mirrorkit.defineInstrumentation({
+    name: 'my-framework',
+    canWrap: (t): boolean => typeof (t as any).run === 'function',
+    wrap: (target, ctx) => {
+      const orig = (target as any).run.bind(target);
+      (target as any).run = async (input: any) => {
+        const out = await orig(input);
+        ctx.emit({ id: crypto.randomUUID(), messages: /* convert out → messages */ [] });
+        return out;
+      };
+      return target;
+    },
+  }),
+);
+```
+
+`register()` works before or after `init()`.
+
+## Graceful shutdown
+
+The collector drains on Node's `beforeExit`. For deterministic delivery in serverless or short-lived processes, flush explicitly:
+
+```typescript
+await mirrorkit.flush();    // block until the queue drains
+await mirrorkit.shutdown(); // stop the timer and flush
+```
+
+## API
+
+| Function | Description |
+|---|---|
+| `init(options)` | Start the collector (idempotent). |
+| `instrument(client)` | Wrap an SDK client / runnable; returns it traced. |
+| `register(instrumentation)` | Add or override an instrumentation. |
+| `defineInstrumentation(inst)` | Typed identity helper for custom instrumentations. |
+| `logTrace(messages, opts?)` | Manually enqueue one trace. |
+| `handler()` | LangChain.js callback handler. |
+| `flush(timeoutMs?)` | Block until the queue drains. |
+| `shutdown()` | Stop the collector (flushes first). |
+
+## Known limitations
+
+- **Streaming** is captured for the AI SDK, but Anthropic/OpenAI `stream: true` calls are still passed through untraced. Non-streaming calls are fully captured everywhere.
+- **Auto-instrumentation** can miss if your app loads a different copy of an SDK than `init()` resolves (ESM/CJS duplication). `instrument()` is unaffected.
+- **LangChain.js** is best-effort (see above).

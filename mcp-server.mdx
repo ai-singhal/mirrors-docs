@@ -1,0 +1,129 @@
+---
+title: "MCP server"
+description: "Drive Mirrors from any AI client: hosted, OAuth, nothing to install."
+icon: "plug"
+---
+
+Mirrors hosts an MCP server, so there's nothing to install or run yourself. Point any MCP client at the hosted endpoint; on first use the client opens your browser to sign in and approve access (standard MCP OAuth, no API keys to paste).
+
+```text
+https://api.runmirrors.com/mcp
+```
+
+<Warning>
+  Use the URL **without a trailing slash** (`…/mcp`). It must match the OAuth `resource` the server advertises, and some clients (Cursor) strip a trailing slash before comparing, so a `/mcp/` config fails its token exchange. Both forms are served on the wire, but configure the slashless one.
+</Warning>
+
+The server exposes the full Mirrors surface, the same operations as the CLI and the web app, so an AI client never has to touch the UI: `list_mirrors` / `get_schema` / `get_drift`, `build_mirror` / `ingest_mirror`, `query_mirror` / `chat_mirror`, `container_start`, `add_context` / `distill_summary`, `generate_proposal` / `accept_proposal`, `generate_eval_set` / `run_eval_set`, and more.
+
+## Connect a client
+
+<Tabs>
+  <Tab title="Claude Code">
+    Run in your terminal:
+
+    ```bash
+    claude mcp add --transport http mirrors https://api.runmirrors.com/mcp
+    ```
+
+    Then run `/mcp` → `mirrors` → **Authenticate** via browser.
+  </Tab>
+  <Tab title="Cursor">
+    Add to `~/.cursor/mcp.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "mirrors": {
+          "url": "https://api.runmirrors.com/mcp"
+        }
+      }
+    }
+    ```
+
+    Cursor shows **Needs login** on the server. Click it to sign in via the browser.
+  </Tab>
+  <Tab title="VS Code">
+    Run in your terminal:
+
+    ```bash
+    code --add-mcp '{"name":"mirrors","type":"http","url":"https://api.runmirrors.com/mcp"}'
+    ```
+
+    VS Code prompts to trust the server, then opens the browser to sign in.
+  </Tab>
+  <Tab title="ChatGPT">
+    On chatgpt.com:
+
+    1. **Settings → Apps & Connectors → Advanced** → enable **Developer mode**
+    2. **Create** → name it *Mirrors*, MCP server URL `https://api.runmirrors.com/mcp`
+    3. Authentication: **OAuth** → Create, then connect
+
+    Sign-in opens in the browser. Needs a Plus/Pro/Business plan (web).
+  </Tab>
+  <Tab title="Codex">
+    Run in your terminal:
+
+    ```bash
+    codex mcp add mirrors --url https://api.runmirrors.com/mcp
+    codex mcp login mirrors
+    ```
+
+    `login` opens the browser to sign in; tokens refresh automatically.
+  </Tab>
+  <Tab title="Claude / Desktop">
+    On claude.ai or Claude Desktop:
+
+    1. **Settings → Connectors → Add custom connector**
+    2. Paste `https://api.runmirrors.com/mcp`
+    3. Click **Add**, then **Connect**
+
+    Connect opens the browser to sign in and approve. Works on free and paid plans.
+  </Tab>
+</Tabs>
+
+## Other clients
+
+The server is a standard MCP OAuth remote, so any client that speaks streamable HTTP works (Zed, Warp, Goose, Amp, opencode, Cline, LM Studio, Raycast, Windsurf, …):
+
+```json
+{
+  "mcpServers": {
+    "mirrors": {
+      "url": "https://api.runmirrors.com/mcp"
+    }
+  }
+}
+```
+
+For **stdio-only clients** (e.g. JetBrains AI Assistant), bridge via `mcp-remote`:
+
+```json
+{
+  "mcpServers": {
+    "mirrors": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://api.runmirrors.com/mcp"]
+    }
+  }
+}
+```
+
+## Headless / CI setups
+
+To skip the browser flow, mint a [workspace key](/api-keys) in the web app (**Settings → API keys**) and send it as a header. Every request is scoped to the authenticated workspace:
+
+```json
+{
+  "mcpServers": {
+    "mirrors": {
+      "url": "https://api.runmirrors.com/mcp",
+      "headers": { "Authorization": "Bearer mk_live_YOUR_KEY" }
+    }
+  }
+}
+```
+
+<Warning>
+  Most clients disable the OAuth sign-in fallback the moment `headers.Authorization` is set, so a placeholder value means the connection fails until you replace it with a real key.
+</Warning>

@@ -1,0 +1,39 @@
+---
+title: "Introduction"
+description: "The programmatic surface: workspace keys, versioning, and limits."
+icon: "code"
+---
+
+Mirrors exposes two programmatic surfaces:
+
+- **`POST /api/collect`**: the trace ingest endpoint the [collectors](/collectors/python) speak. You can also post to it directly.
+- **`/v1/…`**: the versioned public API for your own apps. List mirrors, inspect them, run queries against them, and check usage.
+
+Base URL for both:
+
+```text
+https://api.runmirrors.com
+```
+
+## Authentication
+
+Every request is authenticated with a **workspace API key** (`mk_live_…`), minted in the dashboard under **Settings → API keys**. Send it as a bearer token:
+
+```bash
+curl https://api.runmirrors.com/v1/envs \
+  -H "Authorization: Bearer mk_live_..."
+```
+
+Everything is scoped to the key's workspace: an environment slug that exists in another workspace returns `404`, never data. More on keys: [API keys & authentication](/api-keys).
+
+## Versioning
+
+The public API is versioned under `/v1` so the contract can evolve without breaking clients. The collect endpoint (`/api/collect`) is unversioned and stable.
+
+## Rate limits and quotas
+
+`/v1` runs share the same path as the Playground: plan entitlements, sandbox capacity quotas, and per-workspace rate limiting all apply. Rate-limited requests return `429`; check your allowance with [`GET /v1/usage`](/api-reference/envs#get-v1-usage) or `mirrors usage`.
+
+## Determinism
+
+Query runs support deterministic seeding: the same seed and instructions produce a byte-identical world, so results are reproducible across runs. See [`POST /v1/envs/{slug}/query`](/api-reference/envs#post-v1-envs-slug-query).

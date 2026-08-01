@@ -1,0 +1,90 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Mirrors",
+  "description": "Build a staging environment for your AI agents, replay real sessions against every change, and catch regressions before production.",
+  "colors": {
+    "primary": "#0C82CF",
+    "light": "#4FB3E8",
+    "dark": "#0A6BAD"
+  },
+  "logo": {
+    "light": "/logo.png",
+    "dark": "/logo.png",
+    "href": "https://www.runmirrors.com"
+  },
+  "favicon": "/favicon.png",
+  "fonts": {
+    "family": "Geist"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Dashboard",
+        "href": "https://www.runmirrors.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get started",
+      "href": "https://www.runmirrors.com/signup"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": ["index", "quickstart", "how-it-works"]
+          },
+          {
+            "group": "Collect traces",
+            "pages": [
+              "collectors/python",
+              "collectors/typescript",
+              "collectors/go"
+            ]
+          },
+          {
+            "group": "Drive Mirrors",
+            "pages": ["mcp-server", "cli", "ci-gate"]
+          },
+          {
+            "group": "Account",
+            "pages": ["api-keys", "plans-usage"]
+          },
+          {
+            "group": "Resources",
+            "pages": ["for-agents"]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          {
+            "group": "API reference",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/collect",
+              "api-reference/envs"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude", "cursor", "vscode"]
+  },
+  "footer": {
+    "socials": {
+      "website": "https://www.runmirrors.com"
+    }
+  }
+}

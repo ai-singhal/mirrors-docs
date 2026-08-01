@@ -1,0 +1,39 @@
+---
+title: "CI gate"
+description: "Block agent regressions at the pull request, Vercel-style."
+icon: "code-branch"
+---
+
+The CI gate replays your eval set against every pull request that touches your agent, and reports a **Mirrors eval gate** status check on the PR — green when you approve, red when a regression shows up. Like a deploy check, it reports and does not block; if you want a red check to hold the merge, make it required in your own branch rules.
+
+## How it works
+
+On each PR against your base branch, Mirrors fetches your agent's code at the configured path, runs the bound eval set against your mirror with the **candidate** agent, and diffs the results against the **baseline** (the current agent). The check lands as in-progress → awaiting review, with a candidate-vs-baseline diff in the dashboard (`/ci/<check-id>`) where you approve or reject, flipping the GitHub check.
+
+## Set it up
+
+<Steps>
+  <Step title="Connect GitHub">
+    In the dashboard, go to **Quickstart → CI eval gate** and click **Connect GitHub**. This installs the Mirrors GitHub App; GitHub redirects you back with the installation already linked to your workspace.
+  </Step>
+  <Step title="Bind a repo">
+    Pick the repository and bind it to:
+    - a **mirror** (the twin to replay against),
+    - a **validation eval set** (what runs on each PR),
+    - the **agent path** in the repo (e.g. `agent/agent.py`), which the webhook fetches on each PR,
+    - the **base branch** (default `main`).
+  </Step>
+  <Step title="Optional: make it blocking">
+    The gate never blocks a merge on its own, and Mirrors will not change your branch rules to make it. If you want regressions to hold the merge, add **Mirrors eval gate** as a required status check yourself, under the repo's **Settings → Rules**.
+
+    Know what that does before you do it: a required check gates *every* write to the branch, not just merges. The gate only runs on pull requests, so a direct `git push` to the branch has no check to satisfy and GitHub rejects it with `Required status check "Mirrors eval gate" is expected`. That is right for a team already working through PRs, and a locked door for anyone else.
+  </Step>
+</Steps>
+
+## Reviewing a check
+
+Each check links to a dashboard page showing the candidate-vs-baseline diff per eval case. **Approve** marks the check green; **Reject** fails it. A regression is a decision, not a surprise.
+
+<Note>
+  An installation can only be linked to one workspace. If you see "already linked to another workspace", the GitHub account was claimed elsewhere. Connect from that workspace or use a different GitHub org.
+</Note>

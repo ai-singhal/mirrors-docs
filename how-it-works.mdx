@@ -1,0 +1,62 @@
+---
+title: "How it works"
+description: "Your tools, understood, then a runnable world built to support them."
+icon: "lightbulb"
+---
+
+Mirrors builds a **mirror** (also called a *twin*) of your agent's production environment, then lets you replay real sessions against any version of the agent: safely, deterministically, and at CI speed.
+
+The build is **tool-centric**: Mirrors first discovers and *understands* each of your agent's tools individually, then composes an environment that supports exactly what those tools need.
+
+## From any information to a runnable world
+
+A mirror can be built from **whatever you have**. Any one of these is enough, and each additional source raises fidelity:
+
+| Source | What it contributes |
+|---|---|
+| **Traces** (the [collector](/collectors/python), or uploads) | Recorded behavior, the highest-trust evidence. The collector also captures your agent's own **tool definitions** (name, description, input schema). |
+| **Tool code** | Ground truth for the tools it covers; even bare stubs establish tool identity. |
+| **Tool definitions** (MCP-style JSON) | The declared call surface, without any code. |
+| **OpenAPI specs** | One tool per operation, including the prose rules and error semantics traces rarely show ("submit requires at least one expense", 409 conflict conditions). |
+| **Docs and notes** | Attributed to the tools they describe; the rest flows in as [business context](#business-context). |
+
+The build then runs in three tool-first stages:
+
+1. **Discover**: enumerate the tools across every source and group all evidence per tool.
+2. **Understand**: for each tool, fuse its evidence into an individual profile: purpose, behavioral rules, error conditions, which entities it reads and writes, state transitions. *The tool is understood before anything is built.*
+3. **Compose**: derive the environment from the union of the tools' needs. The schema supplies every entity any tool touches, a plausible reproducible world is seeded, and each tool is bound (your provided code → synthesized executable code → LLM simulation), with the understanding driving both the code and the simulator.
+
+The result is an isolated, runnable environment. Your agent runs against it exactly as it would against production (same tools, same shapes of data), but nothing real is touched, so even destructive flows (refunds, deletes, sends) are safe to exercise.
+
+## Every tool, individually described
+
+Because tools are first-class, every mirror describes them directly: each tool carries its declared or inferred description, contract, behavioral rules, entity effects, and per-tool fidelity: in the dashboard, via `list_tools`/`get_tool` on [MCP](/mcp-server), and on the mirror's own read-only `GET /tools`. Tool *execution* stays where the isolation model puts it: your agent runs **inside** the mirror's sandboxed container, and its tool calls hit the simulated environment there; the mirror is never exposed as a directly-callable tool server.
+
+## Fidelity and evidence honesty
+
+Every mirror is scored **per tool** against the recorded traces: for each tool, how often does the mirror return responses consistent with what production returned? Each tool also carries an **evidence grade** (`trace_validated` > `code_backed` > `spec_derived` > `stub_inferred`), so a tool built from a spec with no recordings is never confused with one validated against production behavior. Fidelity tells you which parts of the mirror you can trust and where to invest [business context](#business-context) or traces to lift it.
+
+## Deterministic seeding
+
+The same seed and instructions produce a **byte-identical world**. That makes replays reproducible: you can rerun the exact session that paged you, on demand, and compare two versions of the agent knowing the environment didn't move underneath them.
+
+## Business context and proposals
+
+Not everything lives in traces or specs: pricing rules, eligibility logic, tone guidelines. You can attach **business context** (free text, from the dashboard, `mirrors context add`, or MCP) that the build and simulation honor, lifting fidelity. Mirrors can also generate **proposals** (agent-suggested changes to the mirror), which you review and accept to trigger a rebuild.
+
+## Replays and evals
+
+- **Replay**: run a recorded session against a new version of the agent and diff the outcome against the baseline.
+- **Evals**: named sets of test cases (auto-generated from your traces or authored by hand) that run against a mirror and score the agent's behavior. Eval sets are what the [CI gate](/ci-gate) runs on every pull request.
+- **Playground**: an interactive console in the dashboard for querying and chatting with a mirror.
+
+## The surfaces
+
+Everything above is reachable four ways, with full parity:
+
+| Surface | Where |
+|---|---|
+| **Dashboard** | [runmirrors.com](https://www.runmirrors.com): Ingest, Build, Simulation, Replay, Evals, Context, Playground |
+| **CLI** | [`mirrors`](/cli), installed with `pip install "mirrorkit[cli]"` |
+| **MCP** | [Hosted server](/mcp-server) at `https://api.runmirrors.com/mcp` |
+| **API** | [Versioned `/v1` REST API](/api-reference/introduction) with workspace keys |

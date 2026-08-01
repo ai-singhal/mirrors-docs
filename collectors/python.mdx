@@ -1,0 +1,97 @@
+---
+title: "Python"
+description: "The two-line drop-in trace collector for Python agents."
+icon: "python"
+---
+
+`mirrorkit` is a lightweight, drop-in production trace collector for LLM agents. Add two lines to your existing LangChain / LangGraph / Anthropic / OpenAI script and your agent's traces start streaming to Mirrors: non-blocking, background-batched, with negligible latency.
+
+## Install
+
+```bash
+pip install mirrorkit
+```
+
+Zero required runtime dependencies: the sender uses only the Python stdlib. LangChain / Anthropic / OpenAI are instrumented only if they're importable.
+
+## Usage (2 lines)
+
+```python
+import mirrorkit
+mirrorkit.init(api_key="mk_live_...", project="my-agent")
+```
+
+That's it. Run your agent normally. Traces are captured automatically and shipped in the background. The endpoint defaults to the `MIRROR_ENDPOINT` environment variable, then to the production URL.
+
+### Options
+
+```python
+mirrorkit.init(
+    api_key="mk_live_...",
+    project="my-agent",
+    endpoint="https://api.runmirrors.com",  # optional override
+    flush_interval=2.0,                      # seconds between batch flushes
+    max_batch=50,                            # max traces per POST
+    instrument=True,                         # auto-hook LangChain/Anthropic/OpenAI
+)
+```
+
+## Manual logging
+
+For frameworks that aren't auto-instrumented, enqueue a trace yourself. Messages are OpenAI-style chat dicts:
+
+```python
+import mirrorkit
+mirrorkit.init(api_key="mk_live_...", project="my-agent")
+
+mirrorkit.log_trace(
+    [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What's the weather in Paris?"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "function": {"name": "get_weather", "arguments": '{"city": "Paris"}'},
+                }
+            ],
+        },
+        {"role": "tool", "tool_call_id": "call_1", "content": "18C, sunny"},
+        {"role": "assistant", "content": "It's 18C and sunny in Paris."},
+    ],
+    trace_id="optional-id",
+    model="gpt-4o",
+)
+
+mirrorkit.flush()  # also runs automatically at interpreter exit
+```
+
+## LangChain global handler
+
+`init()` registers a global LangChain callback handler automatically, so you don't need to pass callbacks. If your setup doesn't honor the global hook, pass the handler explicitly:
+
+```python
+from langchain_core.runnables import RunnableConfig
+import mirrorkit
+
+mirrorkit.init(api_key="mk_live_...", project="my-agent")
+chain.invoke(inputs, config=RunnableConfig(callbacks=[mirrorkit.handler()]))
+```
+
+## API
+
+| Function | Description |
+|---|---|
+| `mirrorkit.init(api_key, project="default", endpoint=None, *, flush_interval=2.0, max_batch=50, instrument=True)` | Start the collector. |
+| `mirrorkit.log_trace(messages, *, trace_id=None, model=None)` | Manually enqueue one trace. |
+| `mirrorkit.flush(timeout=5.0)` | Block until the queue drains. |
+| `mirrorkit.shutdown()` | Stop the collector. |
+| `mirrorkit.handler()` | LangChain callback handler for manual registration. |
+
+<Note>
+  Failures (non-2xx / network errors) are retried a couple of times, then dropped. The collector never raises into your program. The wire format is documented in the [collect API reference](/api-reference/collect).
+</Note>
+
+The same package also ships the [`mirrors` CLI](/cli). Install it with `pip install "mirrorkit[cli]"`.

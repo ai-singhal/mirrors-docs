@@ -1,0 +1,49 @@
+---
+title: "Use these docs with AI"
+description: "Every page as raw markdown, an llms.txt index, and one-click handoff to your AI tools."
+icon: "robot"
+---
+
+These docs are built to be read by AI assistants and agents as much as by people. If you're pointing a model at Mirrors (or you *are* the model), here's the fast path.
+
+## Raw markdown for every page
+
+Append `.md` to any docs URL to get the page as clean markdown, no HTML or chrome:
+
+```text
+https://www.runmirrors.com/docs/quickstart.md
+https://www.runmirrors.com/docs/api-reference/envs.md
+```
+
+## The index: llms.txt
+
+One file lists every page with its description. Fetch it first to decide what to read:
+
+```text
+https://www.runmirrors.com/docs/llms.txt
+```
+
+There's also a product-level overview at [`/llms.txt`](https://www.runmirrors.com/llms.txt) (positioning, pricing, key facts), and `llms-full.txt` bundles the entire docs into a single file if your tool prefers one fetch.
+
+## One-click handoff
+
+Every page has a contextual menu in the top-right corner:
+
+- **Copy page**: the page as markdown, straight to your clipboard.
+- **View as Markdown**: the raw `.md` twin.
+- **Open in ChatGPT / Claude**: starts a chat with the page already loaded as context.
+- **Open in Cursor / VS Code**: pulls the page into your editor's AI chat.
+
+You can also ask questions right here: the docs' built-in assistant answers from this documentation and links its sources.
+
+## Drive the product itself over MCP
+
+Mirrors is also *operable* by agents, not only readable. The hosted [MCP server](/mcp-server) exposes the full product surface (build, explore, query, and eval environments), so an assistant that has read these docs can do the work too:
+
+```text
+https://api.runmirrors.com/mcp
+```
+
+<Tip>
+  A good first prompt for an agent: "Fetch https://www.runmirrors.com/docs/llms.txt, read the pages relevant to my task, then connect to the Mirrors MCP server and do it."
+</Tip>

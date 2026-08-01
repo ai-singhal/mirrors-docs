@@ -1,0 +1,72 @@
+---
+title: "CLI"
+description: "The mirrors command: full parity with the web app, from your terminal."
+icon: "terminal"
+---
+
+The `mirrors` CLI is a terminal client of the hosted backend with **full parity with the web app**. Anything you can do in the UI you can do from the CLI: log in, ingest and build a twin, explore it, run it, add business context, apply agent-suggested fixes, and author + run evals. It talks only HTTP to the backend; it has no engine or build logic of its own.
+
+## Install
+
+It ships in the Python `mirrorkit` package behind the `cli` extra:
+
+```bash
+pip install "mirrorkit[cli]"   # adds the `mirrors` command
+```
+
+## Log in
+
+Authenticate with a [workspace API key](/api-keys) (`mk_live_…`, minted in the web app under **Settings → API keys**):
+
+```bash
+mirrors login    # paste the key (or --api-key / --dev)
+```
+
+Credentials live in `~/.mirrors/config.json`. For CI, set `MIRRORS_BASE_URL` / `MIRRORS_API_KEY` instead.
+
+## Commands
+
+```bash
+mirrors env ls                                 # list environments
+mirrors build traces.jsonl --name airline      # ingest + build a twin (streams the log)
+mirrors build --project airline --name airline # build from a collector stream
+
+mirrors env assets <env>                       # explore the twin…
+mirrors env schema <env>
+mirrors env fidelity <env>
+mirrors env drift <env>
+mirrors env traces <env>
+
+mirrors query <env> "cancel my flight"         # run the twin (one-shot) + see the trace
+mirrors chat <env>                             # multi-turn conversation with the twin
+mirrors container status|start|stop <env>      # its hosted HTTP endpoint
+
+mirrors context add <env> --text "…"           # business context that lifts fidelity
+mirrors proposal new <env>                     # agent-suggested changes…
+mirrors proposal accept <env> <id>             # …accept -> rebuild
+
+mirrors eval generate <env> --save-as smoke    # auto-author eval cases
+mirrors eval create <env> --name smoke --from cases.json
+mirrors eval run <eval-set-id>                 # run evals
+mirrors run show <run-id>                      # inspect a run
+
+mirrors usage                                  # replay-minutes vs. included allowance
+```
+
+<Tip>
+  Add `--json` to any command for machine-readable output, handy in scripts and CI.
+</Tip>
+
+## Typical flow
+
+<Steps>
+  <Step title="Build">
+    `mirrors build --project my-agent --name my-agent` turns collected traces into a runnable twin, streaming the build log.
+  </Step>
+  <Step title="Explore and query">
+    `mirrors env fidelity my-agent` shows per-tool scores; `mirrors query my-agent "…"` runs a session and prints the trace.
+  </Step>
+  <Step title="Eval">
+    `mirrors eval generate my-agent --save-as smoke` auto-authors cases from your traces, then `mirrors eval run <id>` scores the agent against them.
+  </Step>
+</Steps>
