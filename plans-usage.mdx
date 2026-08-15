@@ -1,0 +1,50 @@
+---
+title: "Plans & usage"
+description: "Free, Startup, and Enterprise pricing, how replay-minutes are counted, and where to watch usage."
+icon: "gauge-high"
+---
+
+Mirrors meters work in **replay-minutes**: the minutes an environment's container spends running, which is the time your agent can call its tools. Building and exploring environments is free; the meter runs while a container is up, and it scales to zero on its own once nothing has called it for a while.
+
+## How much does Mirrors cost?
+
+Mirrors has three plans. **Free** costs \$0/month, includes 60 replay-minutes
+each month, and charges \$0.20 per replay-minute after that. **Startup** is
+\$499/month, includes 2,000 replay-minutes, and drops the metered rate to
+\$0.15. **Enterprise** is custom volume pricing. There is no seat licence and no
+minimum commitment on any of them.
+
+| Plan | Price | Included | Overage | What you get |
+|---|---|---|---|---|
+| **Free** | \$0/month | 60 replay-minutes/month | \$0.20 per replay-minute | Unlimited environments, public `/v1` API. A payment method is saved at signup, but \$0 is due today. |
+| **Startup** | \$499/month | 2,000 replay-minutes/month | \$0.15 per replay-minute | Everything in Free, at a lower metered rate, plus priority support. Cancel anytime. |
+| **Enterprise** | Custom | Volume pricing | Negotiated | SSO and role controls, security review, on-premises or BYOC options. [Contact us](https://www.runmirrors.com/contact). |
+
+See the current public prices at [runmirrors.com/pricing](https://www.runmirrors.com/pricing). Your plan, included usage, and metered usage are visible in the dashboard under **Billing**.
+
+## Where can I see how many replay-minutes I have used?
+
+In three places, all showing the same numbers: `mirrors usage` in the CLI, `GET
+/v1/usage` over the API, and the **Billing** section of the dashboard.
+
+```bash
+mirrors usage        # CLI: replay-minutes used vs. included allowance
+```
+
+```bash
+curl https://api.runmirrors.com/v1/usage \
+  -H "Authorization: Bearer mk_live_..."
+```
+
+The dashboard sidebar also shows a near-limit meter as you approach your monthly allowance.
+
+## What happens when I use up my included minutes?
+
+Nothing breaks and nothing is deleted. On Free, usage past the included 60
+replay-minutes is billed at \$0.20 per minute on your saved card. Included
+minutes reset at the start of each month, and your environments, traces, and
+history remain available throughout.
+
+<Tip>
+  Rate limits are separate from the plan allowance: `/v1` requests are also rate-limited per workspace and return `429` when exceeded. See the [API introduction](/api-reference/introduction).
+</Tip>

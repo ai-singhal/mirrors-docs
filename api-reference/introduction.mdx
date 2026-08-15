@@ -1,0 +1,40 @@
+---
+title: "Mirrors API reference"
+sidebarTitle: "Introduction"
+description: "Mirrors exposes two HTTP surfaces at api.runmirrors.com: POST /api/collect for trace ingest and the versioned /v1 API, both authenticated with a workspace key."
+icon: "code"
+---
+
+Mirrors exposes two programmatic surfaces:
+
+- **`POST /api/collect`**: the trace ingest endpoint the [collectors](/collectors/python) speak. You can also post to it directly.
+- **`/v1/…`**: the versioned public API for your own apps. List mirrors, inspect them, run queries against them, and check usage.
+
+Base URL for both:
+
+```text
+https://api.runmirrors.com
+```
+
+## How do I authenticate against the Mirrors API?
+
+Send a **workspace API key** (`mk_live_…`) as a bearer token on every request. Keys are minted in the dashboard under **Settings → API keys**, and the same key works on both surfaces:
+
+```bash
+curl https://api.runmirrors.com/v1/envs \
+  -H "Authorization: Bearer mk_live_..."
+```
+
+Everything is scoped to the key's workspace: an environment slug that exists in another workspace returns `404`, never data. More on keys: [API keys & authentication](/api-keys).
+
+## How is the Mirrors API versioned?
+
+The public API is versioned under `/v1` so the contract can evolve without breaking clients. The collect endpoint (`/api/collect`) is unversioned and stable.
+
+## What are the rate limits and quotas?
+
+Plan entitlements, environment capacity quotas, and per-workspace rate limiting apply to every `/v1` request. Rate-limited requests return `429`; check your allowance with [`GET /v1/usage`](/api-reference/envs#get-v1-usage) or `mirrors usage`.
+
+## Are API runs reproducible?
+
+Query runs support deterministic seeding: the same seed and instructions produce a byte-identical world, so results are reproducible across runs. See [`POST /v1/envs/{slug}/query`](/api-reference/envs#post-v1-envs-slug-query).

@@ -1,0 +1,118 @@
+---
+title: "How agent staging environments work"
+sidebarTitle: "How it works"
+description: "Mirrors understands each of your agent's tools individually, composes a runnable environment that supports exactly what those tools need, and serves it to your agent over HTTP."
+icon: "lightbulb"
+---
+
+Mirrors builds a **mirror** (also called a *twin*) of your agent's production
+environment and serves its tools over HTTP. Your agent stays where it is: on your
+machine, in your framework, on your own model key. It just calls the twin instead
+of production.
+
+That is the whole compatibility story. There is no SDK to adopt, no contract your
+code has to satisfy, and no version of anything we have to match. If your agent
+can make an HTTP request, it can run against a mirror.
+
+The build is **tool-centric**: Mirrors first discovers and *understands* each of your agent's tools individually, then composes an environment that supports exactly what those tools need.
+
+## What can Mirrors build an environment from?
+
+A mirror can be built from **whatever you have**: recorded traces, tool code,
+MCP-style tool definitions, OpenAPI specs, or plain docs and notes. Any single
+one of these is enough to get a runnable environment, and each additional source
+raises fidelity rather than replacing what came before.
+
+| Source | What it contributes |
+|---|---|
+| **Traces** (the [collector](/collectors/python), or uploads) | Recorded behavior, the highest-trust evidence. The collector also captures your agent's own **tool definitions** (name, description, input schema). |
+| **Tool code** | Ground truth for the tools it covers; even bare stubs establish tool identity. |
+| **Tool definitions** (MCP-style JSON) | The declared call surface, without any code. |
+| **OpenAPI specs** | One tool per operation, including the prose rules and error semantics traces rarely show ("submit requires at least one expense", 409 conflict conditions). |
+| **Docs and notes** | Attributed to the tools they describe; the rest flows in as [business context](#what-is-business-context-and-what-are-proposals). |
+
+The build then runs in three tool-first stages:
+
+1. **Discover**: enumerate the tools across every source and group all evidence per tool.
+2. **Understand**: for each tool, fuse its evidence into an individual profile: purpose, behavioral rules, error conditions, which entities it reads and writes, state transitions. *The tool is understood before anything is built.*
+3. **Compose**: derive the environment from the union of the tools' needs. The schema supplies every entity any tool touches, a plausible reproducible world is seeded, and each tool is bound (your provided code → synthesized executable code → LLM simulation), with the understanding driving both the code and the simulator.
+
+The result is an isolated, runnable environment. Your agent calls it exactly as it would call production (same tools, same shapes of data), but nothing real is touched, so even destructive flows (refunds, deletes, sends) are safe to exercise.
+
+## How does Mirrors describe each tool?
+
+Because tools are first-class, every mirror describes them directly: each tool
+carries its declared or inferred description, contract, behavioral rules, entity
+effects, and per-tool fidelity. Read them in the dashboard, via
+`list_tools`/`get_tool` on [MCP](/mcp-server), or over
+[`GET /v1/envs/{slug}/tools`](/api-reference/tools), which will hand you the
+listing already shaped for the OpenAI or Anthropic `tools=` parameter.
+
+Tool *execution* happens inside the mirror's isolated container, and every request
+to it is proxied by the control plane, which resolves your workspace first. The
+container itself has no public address.
+
+## How does Mirrors measure fidelity?
+
+Every mirror is scored **per tool** against the recorded traces: for each tool, how often does the mirror return responses consistent with what production returned? Each tool also carries an **evidence grade** (`trace_validated` > `code_backed` > `spec_derived` > `stub_inferred`), so a tool built from a spec with no recordings is never confused with one validated against production behavior. Fidelity tells you which parts of the mirror you can trust and where to invest [business context](#what-is-business-context-and-what-are-proposals) or traces to lift it.
+
+## What does replaying a trace tell me?
+
+Pick any recorded production trace and replay its calls through the twin, in
+order, then read the per-call diff: what production returned, what the twin
+returned, and the reason they differ (`missing_keys settled_at`, not "close
+enough"). A tool the recording used and the twin has no backend for is reported
+as a gap rather than scored as a mismatch, because it measured nothing.
+
+It is the same measurement the per-build fidelity reading takes, narrowed to one
+session. The narrowing is the point: a number tells you whether to trust the
+twin, and this tells you which call to go and fix.
+
+This asks about the TWIN, not about your agent. It sends the calls production
+actually made, so the answer does not depend on what your agent would choose
+today; your agent is the thing you run against the twin yourself, on your own
+machine.
+
+## How does Mirrors make replays reproducible?
+
+Through deterministic seeding: the same seed and instructions produce a
+**byte-identical world**. You can rerun the exact session that paged you, on
+demand, and compare two versions of the agent knowing the environment didn't
+move underneath them.
+
+## What is business context, and what are proposals?
+
+Business context is free text you attach to a mirror (pricing rules, eligibility
+logic, tone guidelines) that the build and the simulation honor, which lifts
+fidelity where traces and specs are silent. A proposal is an agent-suggested
+change to the mirror that you review and accept, which triggers a rebuild.
+
+Not everything lives in traces or specs, which is why this exists. Attach context from the dashboard, with `mirrors context add`, or over MCP; generate proposals the same three ways, then review and accept them to trigger a rebuild.
+
+## What is a session?
+
+A session is one isolated world. You open it, your agent calls tools in it, and
+when you close it the world is gone. Two sessions never see each other's writes,
+so a test suite can run them in parallel against one container.
+
+Open a session with plain-English preconditions ("three open orders, one past its
+refund window") and the twin seeds a world that satisfies them. The response
+carries a `seed` and a `world_hash`: pass the seed back and you get that exact
+world again, which is what makes a failing run reproducible rather than a story
+about one.
+
+Every session keeps a transcript of the calls made in it, in order. With your
+agent's loop outside the sandbox, that ledger is the record of what it did.
+
+## Where can I drive all of this from?
+
+Four surfaces, with full parity: the web dashboard, the `mirrors` CLI, the
+hosted MCP server, and the versioned `/v1` REST API. Anything you can do in one
+you can do in the others, because they all call the same backend.
+
+| Surface | Where |
+|---|---|
+| **Dashboard** | [runmirrors.com](https://www.runmirrors.com): Set up, Simulation, Replay, Improve, Connect |
+| **CLI** | [`mirrors`](/cli), installed with `pip install "mirrorkit[cli]"` |
+| **MCP** | [Hosted server](/mcp-server) at `https://api.runmirrors.com/mcp` |
+| **API** | [Versioned `/v1` REST API](/api-reference/introduction) with workspace keys, including the [tool plane](/api-reference/tools) your agent calls |

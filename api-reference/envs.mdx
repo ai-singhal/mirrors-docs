@@ -1,0 +1,65 @@
+---
+title: "Environments API"
+sidebarTitle: "Environments"
+description: "List your environments, fetch one by slug, and read the workspace's usage. The tools and sessions themselves are on the tool plane."
+icon: "server"
+---
+
+All `/v1` endpoints take `Authorization: Bearer mk_live_…` and are scoped to the key's workspace. See [Introduction](/api-reference/introduction) for auth, rate limits, and versioning.
+
+This page is the account-level surface: which mirrors exist, and what the workspace has spent. What your agent actually binds to is on the [tool plane](/api-reference/tools).
+
+## GET /v1/envs
+
+List the workspace's environments (mirrors), newest first.
+
+```bash
+curl https://api.runmirrors.com/v1/envs \
+  -H "Authorization: Bearer mk_live_..."
+```
+
+Returns an array of environment summaries:
+
+```json
+[
+  {
+    "id": "env_…",
+    "name": "airline",
+    "slug": "airline",
+    "status": "ready",
+    "framework": "langgraph",
+    "n_traces": 412,
+    "n_tools": 9,
+    "schema_source": "traces",
+    "covered_pct": 88.0,
+    "simulated_pct": 12.0,
+    "language": "python"
+  }
+]
+```
+
+## GET /v1/envs/\{slug\}
+
+Fetch one environment by slug. Returns the same summary shape as the list endpoint. Slugs from other workspaces return `404`, never another tenant's data.
+
+```bash
+curl https://api.runmirrors.com/v1/envs/airline \
+  -H "Authorization: Bearer mk_live_..."
+```
+
+## Replaying a trace
+
+Replaying one recorded trace against a twin is on the app surface rather than
+`/v1`, because it is a dashboard action rather than something an agent drives:
+`POST /api/envs/{id}/traces/{trace_id}/replay` returns the per-call diff the
+Replay screen renders. It boots a container and spends a model call per simulated
+call, so it goes through the same quota gate every other spending path does.
+
+## GET /v1/usage
+
+Replay-minutes used vs. your plan allowance for the workspace, the same numbers as `mirrors usage` and the dashboard.
+
+```bash
+curl https://api.runmirrors.com/v1/usage \
+  -H "Authorization: Bearer mk_live_..."
+```

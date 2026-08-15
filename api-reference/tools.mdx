@@ -1,0 +1,165 @@
+---
+title: "Tool plane API"
+sidebarTitle: "Tools & sessions"
+description: "List a mirror's tools in your provider's schema shape, open an isolated session, and call tools in it. This is the surface your agent binds to."
+icon: "wrench"
+---
+
+Your agent stays where it is. It runs on your machine, in your framework, on your
+own model key, and calls these endpoints instead of your production backend.
+
+All `/v1` endpoints take `Authorization: Bearer …` and are scoped to a workspace.
+See [Introduction](/api-reference/introduction) for auth, rate limits, and
+versioning.
+
+## Two credentials
+
+A **workspace key** (`mk_live_…`, minted in Settings) can do anything the
+workspace can. A **session token** (`ms_…`) is returned once when you open a
+session and can do exactly one thing: call tools in that session.
+
+Give your agent process the session token. It is the credential that travels into
+a loop, a CI job, or a teammate's terminal, and scoping it means a leak dies with
+the session rather than opening your whole workspace.
+
+## GET /v1/envs/\{slug\}/tools
+
+The callable surface, in the shape whatever is binding to it expects.
+
+```bash
+curl "https://api.runmirrors.com/v1/envs/airline/tools?format=anthropic" \
+  -H "Authorization: Bearer mk_live_..."
+```
+
+<ParamField query="format" type="string" default="native">
+  `native`, `openai`, or `anthropic`. The provider formats are the exact shape
+  those SDKs' `tools=` parameter takes, so the response goes straight into your
+  loop. `native` adds what we are unsure of (see below).
+</ParamField>
+
+The `native` format carries fields the provider formats deliberately drop, because
+they are facts about the twin for the engineer reading the listing, not
+instructions for the model choosing a tool:
+
+```json
+{
+  "env": "airline",
+  "format": "native",
+  "n_tools": 9,
+  "tools": [
+    {
+      "name": "cancel_booking",
+      "description": "Cancel a booking by id.",
+      "input_schema": { "type": "object", "properties": { "id": { "type": "string" } } },
+      "op": "update",
+      "entity": "booking",
+      "binding": "provided",
+      "confidence": 0.94,
+      "n_recordings": 37
+    }
+  ]
+}
+```
+
+`binding` is the one to read. `provided` means your own tool code runs against the
+seeded world, so behaviour matches production. `synthesized` means code we
+generated from the recordings. `simulated` means a model answers from the
+recordings and the schema. All three answer; the difference decides how much
+weight to put on a surprising result.
+
+## POST /v1/envs/\{slug\}/wake
+
+Start the environment's container without opening a session, and answer
+immediately: `200` when it is ready, `202` while it boots.
+
+```bash
+curl -X POST https://api.runmirrors.com/v1/envs/airline/wake \
+  -H "Authorization: Bearer mk_live_..."
+```
+
+A cold container takes about two minutes. Opening a session waits for it, which is
+usually what you want; this exists for when you would rather poll it in a test
+suite's setup than pay the wait inside your first assertion.
+
+## POST /v1/envs/\{slug\}/sessions
+
+Open an isolated world and mint the token that can act in it.
+
+```bash
+curl -X POST https://api.runmirrors.com/v1/envs/airline/sessions \
+  -H "Authorization: Bearer mk_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"seed_instructions": "a customer with one refundable booking"}'
+```
+
+<ParamField body="seed_instructions" type="string">
+  Plain English preconditions. The twin constructs a world that satisfies them.
+  Omit for the world the mirror was built with.
+</ParamField>
+
+<ParamField body="seed" type="integer">
+  Pins the draw. The same seed and instructions reproduce the same world exactly.
+  Omit to draw a fresh one; it comes back in the response.
+</ParamField>
+
+```json
+{
+  "session_id": "9f3c…",
+  "session_token": "ms_…",
+  "env": "airline",
+  "seeded": true,
+  "seed": 42,
+  "world_hash": "…",
+  "n_files": 0,
+  "note": null
+}
+```
+
+`session_token` is shown once. `seed` and `world_hash` are the reproducibility
+receipts: keep them and any run is replayable.
+
+## POST /v1/sessions/\{id\}/call
+
+Call one tool in that world.
+
+```bash
+curl -X POST https://api.runmirrors.com/v1/sessions/9f3c…/call \
+  -H "Authorization: Bearer ms_..." \
+  -H "Content-Type: application/json" \
+  -d '{"name": "cancel_booking", "arguments": {"id": "BK-4471"}}'
+```
+
+```json
+{ "content": "Booking BK-4471 cancelled.", "error": false, "fidelity": "provided", "call_id": "c0" }
+```
+
+`error` is the TOOL's error, not the transport's. A call that correctly reports
+"no such booking" is a successful request carrying an errored result, exactly as
+your real tool would behave.
+
+## GET /v1/sessions/\{id\}
+
+What the session has done and what world it is in: `n_calls`, `n_errors`, the
+`fidelity` mix, `state_hash` (which changes when the world changes), and the
+seeding receipts.
+
+## GET /v1/sessions/\{id\}/transcript
+
+Every tool call the session made, in order, with arguments, fidelity, and latency.
+It does not carry tool output: results can be large and you already received each
+one at call time.
+
+## DELETE /v1/sessions/\{id\}
+
+End the session, drop its world, and revoke its token. Sessions are also reaped
+after an idle period, so a forgotten one costs you nothing.
+
+## Errors
+
+| Status | Meaning |
+| --- | --- |
+| `401` | Missing, unknown, revoked, or expired credentials. A session token presented for a different session is also `401`, and the message never confirms that the other session exists. |
+| `404` | Unknown environment, or a session that no longer exists (idle past its TTL, or its container restarted). Open a new one. |
+| `422` | No backend routes that tool name in this environment. |
+| `429` | Over the workspace's per-minute rate limit. |
+| `503` | The twin is not reachable yet, almost always because it is still starting. Retry, or `POST /wake` first. |

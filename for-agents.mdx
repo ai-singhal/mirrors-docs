@@ -1,0 +1,55 @@
+---
+title: "Use these docs with AI"
+description: "Append .md to any docs URL for clean markdown, fetch /docs/llms.txt for an index of every page, or hand a page straight to ChatGPT, Claude, Cursor, or VS Code."
+icon: "robot"
+---
+
+These docs are built to be read by AI assistants and agents as much as by people. If you're pointing a model at Mirrors (or you *are* the model), here's the fast path.
+
+## How do I get these docs as raw markdown?
+
+Append `.md` to any docs URL. Every page has a raw-markdown twin at that address,
+served as clean markdown with no HTML or chrome, which is what you want if you
+are feeding a page to a model rather than reading it yourself.
+
+```text
+https://www.runmirrors.com/docs/quickstart.md
+https://www.runmirrors.com/docs/api-reference/envs.md
+```
+
+## Is there an llms.txt index of the docs?
+
+Yes, at `https://www.runmirrors.com/docs/llms.txt`. It lists every page with its
+description, so an agent can fetch that one file first and decide what is worth
+reading before pulling any page.
+
+```text
+https://www.runmirrors.com/docs/llms.txt
+```
+
+There's also a product-level overview at [`/llms.txt`](https://www.runmirrors.com/llms.txt) (positioning, pricing, key facts), and `llms-full.txt` bundles the entire docs into a single file if your tool prefers one fetch.
+
+## How do I send a page to ChatGPT, Claude, or Cursor?
+
+Use the contextual menu in the top-right corner of every page. It hands the page
+to your tool with the content already loaded as context, so you never have to
+copy and paste a docs page into a chat by hand.
+
+- **Copy page**: the page as markdown, straight to your clipboard.
+- **View as Markdown**: the raw `.md` twin.
+- **Open in ChatGPT / Claude**: starts a chat with the page already loaded as context.
+- **Open in Cursor / VS Code**: pulls the page into your editor's AI chat.
+
+You can also ask questions right here: the docs' built-in assistant answers from this documentation and links its sources.
+
+## Can an agent operate Mirrors, not just read about it?
+
+Yes. Mirrors is *operable* by agents, not only readable. The hosted [MCP server](/mcp-server) exposes the full product surface (build and explore environments), so an assistant that has read these docs can do the work too:
+
+```text
+https://api.runmirrors.com/mcp
+```
+
+<Tip>
+  A good first prompt for an agent: "Fetch https://www.runmirrors.com/docs/llms.txt, read the pages relevant to my task, then connect to the Mirrors MCP server and do it."
+</Tip>

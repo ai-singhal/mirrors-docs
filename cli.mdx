@@ -1,0 +1,89 @@
+---
+title: "Mirrors CLI reference"
+sidebarTitle: "CLI"
+description: "The mirrors command does everything the web app does, from your terminal: build environments, read their tool surface, call a tool by hand, and add context."
+icon: "terminal"
+---
+
+The `mirrors` CLI is a terminal client of the hosted backend with **full parity with the web app**. Anything you can do in the UI you can do from the CLI: log in, ingest and build a twin, read its tool surface, call a tool by hand, add business context, and apply agent-suggested fixes. It talks only HTTP to the backend; it has no engine or build logic of its own.
+
+Your own agent is not run from here, and that is the point: it stays on your machine and calls the twin's tools over HTTP. `mirrors tools <env> --format anthropic` prints the listing already shaped for your SDK's `tools=` parameter.
+
+## How do I install the Mirrors CLI?
+
+Install it with pip. The CLI ships inside the Python `mirrorkit` package behind
+the `cli` extra, so one install gives you both the collector and the `mirrors`
+command:
+
+```bash
+pip install "mirrorkit[cli]"   # adds the `mirrors` command
+```
+
+## How do I log in to the CLI?
+
+Run `mirrors login` and paste a [workspace API key](/api-keys) (`mk_live_…`,
+minted in the web app under **Settings → API keys**). There is no separate CLI
+account: the key is what identifies your workspace.
+
+```bash
+mirrors login    # paste the key (or --api-key / --dev)
+```
+
+Credentials live in `~/.mirrors/config.json`. For CI, set `MIRRORS_BASE_URL` / `MIRRORS_API_KEY` instead.
+
+## What commands does the Mirrors CLI have?
+
+The commands group into six things: listing and building environments (`env ls`,
+`build`), exploring one (`env assets`, `env schema`, `env fidelity`, `env drift`,
+`env traces`), running one (`query`, `chat`, `container`), raising fidelity
+(`context add`, `proposal`), reading and calling tools (`tools`, `call`),
+and checking usage (`usage`).
+
+```bash
+mirrors env ls                                 # list environments
+mirrors build traces.jsonl --name airline      # ingest + build a twin (streams the log)
+mirrors build --project airline --name airline # build from a collector stream
+
+mirrors env assets <env>                       # explore the twin…
+mirrors env schema <env>
+mirrors env fidelity <env>
+mirrors env drift <env>
+mirrors env traces <env>
+
+mirrors query <env> "cancel my flight"         # run the twin (one-shot) + see the trace
+mirrors chat <env>                             # multi-turn conversation with the twin
+mirrors container status|start|stop <env>      # its hosted HTTP endpoint
+
+mirrors context add <env> --text "…"           # business context that lifts fidelity
+mirrors proposal new <env>                     # agent-suggested changes…
+mirrors proposal accept <env> <id>             # …accept -> rebuild
+
+mirrors tools <env>                            # the callable surface, and how bound
+mirrors tools <env> --format anthropic         # ready for your SDK's tools=
+mirrors call <env> get_order '{"id": "o_1"}'   # call one, by hand
+mirrors run show <run-id>                      # inspect a run
+
+mirrors usage                                  # replay-minutes vs. included allowance
+```
+
+<Tip>
+  Add `--json` to any command for machine-readable output, handy in scripts and CI.
+</Tip>
+
+## What does a typical CLI workflow look like?
+
+Build, explore, then connect. You build a twin from collected traces, check its
+per-tool fidelity and call a tool or two against it, then point your agent at it
+from your traces and run it to score the agent.
+
+<Steps>
+  <Step title="Build">
+    `mirrors build --project my-agent --name my-agent` turns collected traces into a runnable twin, streaming the build log.
+  </Step>
+  <Step title="Explore and query">
+    `mirrors env fidelity my-agent` shows per-tool scores; `mirrors query my-agent "…"` runs a session and prints the trace.
+  </Step>
+  <Step title="Eval">
+    `mirrors tools my-agent --format anthropic` gives you the listing your agent binds to; the [tool plane](/api-reference/tools) is the three calls around it.
+  </Step>
+</Steps>

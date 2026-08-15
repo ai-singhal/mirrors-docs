@@ -1,0 +1,46 @@
+---
+title: "API keys & authentication"
+description: "One workspace API key (mk_live_…), minted under Settings, authenticates the collectors, the CLI, the MCP server in CI, and the /v1 API."
+icon: "key"
+---
+
+One credential drives everything programmatic in Mirrors: the **workspace API key**. Keys start with `mk_live_` and are scoped to a workspace: every trace, environment, and run they touch lands in that workspace and no other.
+
+## How do I create a Mirrors API key?
+
+Sign in at [runmirrors.com](https://www.runmirrors.com/login), open **Settings →
+API keys**, and click **Create key**. Name it after where it will live (e.g.
+`prod-collector`, `ci`) and copy the `mk_live_…` value: that is the credential for
+every programmatic surface.
+
+Prefer one key per deployment surface, so a leaked key can be revoked without rotating everything else.
+
+## Where can I use a workspace API key?
+
+The same key works on all four programmatic surfaces: the collectors, the CLI,
+the MCP server in headless or CI mode, and the `/v1` and `/api/collect` HTTP
+endpoints. Interactive MCP use needs no key at all, because the hosted server
+signs you in with browser OAuth.
+
+| Surface | How to pass it |
+|---|---|
+| [Collectors](/collectors/python) | `mirrorkit.init(api_key="mk_live_…")` (or the TS/Go equivalents) |
+| [CLI](/cli) | `mirrors login`, or `MIRRORS_API_KEY` in CI |
+| [MCP server](/mcp-server), headless | `"headers": { "Authorization": "Bearer mk_live_…" }` |
+| [/v1 API and /api/collect](/api-reference/introduction) | `Authorization: Bearer mk_live_…` |
+
+Keys are for code and CI, where no browser is available.
+
+## How are API keys scoped, and how do I keep them safe?
+
+Every key is scoped to exactly one workspace and authenticates as that workspace,
+so treat it like a password: it can reach everything in the workspace and nothing
+outside it. The practical rules are three.
+
+- Everything is workspace-scoped: an environment slug that exists in another workspace returns `404`, never data.
+- Store keys in your secret manager or CI secrets, not in source. The collectors read the endpoint from the environment; keep the key there too.
+- Revoke and re-mint from **Settings → API keys** at any time; a revoked key fails closed with `401`.
+
+<Note>
+  The browser dashboard itself never uses `mk_live_` keys; it authenticates with your user session. Keys exist so machines can act on the workspace's behalf.
+</Note>

@@ -1,0 +1,202 @@
+---
+title: "Quickstart: test an AI agent"
+sidebarTitle: "Quickstart"
+description: "Connect an MCP client, add the collector, build an environment, then point your agent at it: four steps, start to finish."
+icon: "rocket"
+---
+
+By the end of this page your agent's real traces are streaming to Mirrors, you have a runnable environment built from them, and your agent is calling its tools instead of production.
+
+<Note>
+  Mirrors is available by request: accounts are enabled one at a time rather than
+  self-serve. If you have not been set up yet, [request
+  access](https://www.runmirrors.com/contact) first. Signing in without a granted
+  account leaves every step below answering `403`.
+</Note>
+
+## How do I set up Mirrors, step by step?
+
+Five steps: connect an MCP client so your AI does the driving, add the collector
+so real sessions start streaming, then build an environment and point your agent at it,
+and read your first result. Steps 3 to 5 can be run from your MCP client, the
+[CLI](/cli), or the dashboard; they all hit the same backend.
+
+<Steps>
+  <Step title="Install the MCP">
+    Mirrors hosts an MCP server that exposes the full product surface (build, explore, query, and eval environments), so any MCP client can drive it. Point your client at the hosted endpoint; sign-in happens in the browser on first use, no API key to paste.
+
+    ```text
+    https://api.runmirrors.com/mcp
+    ```
+
+    <Tabs>
+      <Tab title="Claude Code">
+        ```bash
+        claude mcp add --transport http mirrors https://api.runmirrors.com/mcp
+        ```
+
+        Then run `/mcp` → `mirrors` → **Authenticate** via browser.
+      </Tab>
+      <Tab title="Cursor">
+        Add to `~/.cursor/mcp.json`:
+
+        ```json
+        {
+          "mcpServers": {
+            "mirrors": {
+              "url": "https://api.runmirrors.com/mcp"
+            }
+          }
+        }
+        ```
+
+        Cursor shows **Needs login** on the server. Click it to sign in via the browser.
+      </Tab>
+      <Tab title="VS Code">
+        ```bash
+        code --add-mcp '{"name":"mirrors","type":"http","url":"https://api.runmirrors.com/mcp"}'
+        ```
+
+        VS Code prompts to trust the server, then opens the browser to sign in.
+      </Tab>
+      <Tab title="ChatGPT">
+        On chatgpt.com:
+
+        1. **Settings → Apps & Connectors → Advanced** → enable **Developer mode**
+        2. **Create** → name it *Mirrors*, MCP server URL `https://api.runmirrors.com/mcp`
+        3. Authentication: **OAuth** → Create, then connect
+
+        Sign-in opens in the browser. Needs a Plus/Pro/Business plan (web).
+      </Tab>
+      <Tab title="Codex">
+        ```bash
+        codex mcp add mirrors --url https://api.runmirrors.com/mcp
+        codex mcp login mirrors
+        ```
+
+        `login` opens the browser to sign in; tokens refresh automatically.
+      </Tab>
+      <Tab title="Claude / Desktop">
+        On claude.ai or Claude Desktop:
+
+        1. **Settings → Connectors → Add custom connector**
+        2. Paste `https://api.runmirrors.com/mcp`
+        3. Click **Add**, then **Connect**
+
+        Connect opens the browser to sign in and approve. Works on free and paid plans.
+      </Tab>
+    </Tabs>
+
+    Every other client (Zed, Warp, Goose, Cline, Windsurf, …), the one-click installs, and headless/CI setups with a workspace key are on the [MCP server](/mcp-server) page.
+  </Step>
+
+  <Step title="Install the collector">
+    The collector streams your agent's real production traces to Mirrors, the raw material every environment is built from. First mint a workspace API key (`mk_live_…`) at [runmirrors.com](https://www.runmirrors.com/login) under **Settings → API keys**, then install the collector and initialize it before your agent runs. It auto-instruments LangChain/LangGraph, Anthropic, and OpenAI, ships traces in the background, and never raises into your app.
+
+    <CodeGroup>
+    ```python Python
+    # pip install mirrorkit
+    import mirrorkit
+    mirrorkit.init(api_key="mk_live_...", project="my-agent")
+    ```
+
+    ```typescript TypeScript
+    // npm install mirrorkit
+    import * as mirrorkit from 'mirrorkit';
+    mirrorkit.init({ apiKey: 'mk_live_...', project: 'my-agent' });
+    ```
+
+    ```go Go
+    // go get github.com/ai-singhal/mirrorkit-go
+    mirrorkit.Init(mirrorkit.Options{APIKey: "mk_live_...", Project: "my-agent"})
+    ```
+    </CodeGroup>
+
+    Run your agent normally and traces start streaming. Details per language: [Python](/collectors/python), [TypeScript](/collectors/typescript), [Go](/collectors/go).
+  </Step>
+
+  <Step title="Build your first environment">
+    Turn the collected traces into an environment: a schema, a seeded database, and bound tools, a runnable copy of your agent's world, scored per tool for [fidelity](/how-it-works#how-does-mirrors-measure-fidelity). Ask your MCP client, or use the [CLI](/cli):
+
+    <CodeGroup>
+    ```text MCP client
+    Build a mirror from my "my-agent" project and call it my-agent.
+    ```
+
+    ```bash CLI
+    pip install "mirrorkit[cli]"
+    mirrors login                                   # paste your mk_live_… key
+    mirrors build --project my-agent --name my-agent
+    ```
+    </CodeGroup>
+
+    You can also build from the dashboard under **Set up**. Prefer files over a live stream? `mirrors build traces.jsonl --name my-agent` ingests a trace log directly.
+  </Step>
+
+  <Step title="Point your agent at it">
+    Your agent does not move. Give it the endpoint, and every tool call goes to the
+    twin instead of production. Nothing about your framework, your SDK version, or
+    how your loop is written matters here: it is three HTTP calls.
+
+    ```python
+    import os, httpx
+
+    MIRROR = "https://api.runmirrors.com/v1"
+    KEY = os.environ["MIRRORS_API_KEY"]
+
+    with httpx.Client(base_url=MIRROR, timeout=300,
+                      headers={"Authorization": f"Bearer {KEY}"}) as c:
+        # your tools, already in Anthropic's tools= shape ("openai" works too)
+        tools = c.get("/envs/my-agent/tools", params={"format": "anthropic"}).json()["tools"]
+
+        # an isolated world, seeded in plain English
+        s = c.post("/envs/my-agent/sessions",
+                   json={"seed_instructions": "a customer with one refundable booking"}).json()
+        auth = {"Authorization": f"Bearer {s['session_token']}"}
+
+        # your agent loop goes here: every tool call it makes becomes one of these
+        r = c.post(f"/sessions/{s['session_id']}/call",
+                   json={"name": "cancel_booking", "arguments": {"id": "BK-4471"}},
+                   headers=auth).json()
+        print(r["content"])
+
+        c.delete(f"/sessions/{s['session_id']}", headers=auth)
+    ```
+
+    The first call to a cold mirror waits about two minutes while its container
+    starts. `POST /v1/envs/my-agent/wake` warms it without blocking, which is what
+    you want in a test suite's setup. Full reference: [tool plane](/api-reference/tools).
+  </Step>
+
+  <Step title="Read what it did">
+    Every session keeps a transcript of the calls made in it, in order, with
+    arguments, latency, and how each tool was answered (`provided` real code,
+    `synthesized` generated code, `simulated` a model). With your agent's loop on
+    your own machine, that ledger is our record of what it did.
+
+    ```bash
+    curl https://api.runmirrors.com/v1/sessions/$SESSION_ID/transcript \
+      -H "Authorization: Bearer $SESSION_TOKEN"
+    ```
+
+    The dashboard's **Connect** screen has the same thing with a console attached,
+    so you can call a tool by hand and read exactly what your agent would read.
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="How it works" icon="lightbulb" href="/how-it-works">
+    Fidelity scoring, deterministic seeding, sessions, and business context.
+  </Card>
+  <Card title="MCP server" icon="plug" href="/mcp-server">
+    Every client, one-click installs, and headless setups.
+  </Card>
+  <Card title="CLI" icon="terminal" href="/cli">
+    The `mirrors` command: full parity with the web app.
+  </Card>
+  <Card title="Tool plane" icon="wrench" href="/api-reference/tools">
+    The endpoints your agent calls: tools, sessions, transcripts.
+  </Card>
+</CardGroup>
