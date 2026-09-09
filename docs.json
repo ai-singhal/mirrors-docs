@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Mirrors",
-  "description": "Build a staging environment for your AI agents, replay real sessions against every change, and catch regressions before production.",
+  "description": "Build a runnable twin of the backends your AI agent talks to, replay real sessions against every change, and catch regressions before production.",
   "colors": {
     "primary": "#0C82CF",
     "light": "#4FB3E8",
@@ -33,65 +33,6 @@
       "href": "https://www.runmirrors.com/signup"
     }
   },
-  "navigation": {
-    "tabs": [
-      {
-        "tab": "Documentation",
-        "groups": [
-          {
-            "group": "Get started",
-            "pages": [
-              "index",
-              "quickstart",
-              "how-it-works"
-            ]
-          },
-          {
-            "group": "Collect traces",
-            "pages": [
-              "collectors/python",
-              "collectors/typescript",
-              "collectors/go"
-            ]
-          },
-          {
-            "group": "Drive Mirrors",
-            "pages": [
-              "mcp-server",
-              "cli"
-            ]
-          },
-          {
-            "group": "Account",
-            "pages": [
-              "api-keys",
-              "plans-usage"
-            ]
-          },
-          {
-            "group": "Resources",
-            "pages": [
-              "for-agents"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "API reference",
-            "pages": [
-              "api-reference/introduction",
-              "api-reference/collect",
-              "api-reference/envs",
-              "api-reference/tools"
-            ]
-          }
-        ]
-      }
-    ]
-  },
   "contextual": {
     "options": [
       "copy",
@@ -108,5 +49,75 @@
       "x": "https://x.com/runmirrors",
       "linkedin": "https://www.linkedin.com/company/runmirrors"
     }
+  },
+  "redirects": [
+    {
+      "source": "/README",
+      "destination": "/"
+    }
+  ],
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "index",
+              "quickstart",
+              "how-it-works",
+              "traces"
+            ]
+          },
+          {
+            "group": "Ways in",
+            "pages": [
+              "collectors",
+              "mcp",
+              "cli"
+            ]
+          },
+          {
+            "group": "Account",
+            "pages": [
+              "api-keys",
+              "plans-and-usage"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "for-agents"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          {
+            "group": "API reference",
+            "pages": [
+              "reference/introduction",
+              "reference/collect",
+              "reference/envs",
+              "reference/tools",
+              "reference/build"
+            ]
+          },
+          {
+            "group": "Generated reference",
+            "pages": [
+              "reference/formats",
+              "reference/getting-started",
+              "reference/inputs",
+              "reference/overrides",
+              "reference/verbs"
+            ]
+          }
+        ]
+      }
+    ]
   }
 }

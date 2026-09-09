@@ -1,0 +1,26 @@
+# Mirrors documentation
+
+Mirrors builds a runnable digital twin of the backends an AI agent talks to, from the agent's own traces, and serves it over a tool plane, a hosted MCP server, a CLI and a web app.
+
+## Pages
+
+- [Mirrors documentation](https://www.runmirrors.com/docs/README): What a mirror is and where to start.
+- [Quickstart](https://www.runmirrors.com/docs/quickstart): From traces to a twin your agent can call, in four steps.
+- [How it works](https://www.runmirrors.com/docs/how-it-works): Mirrors, builds, twins, sessions, fidelity, drift and the levers that fix it.
+- [Trace exports](https://www.runmirrors.com/docs/traces): What a good export contains and the checks to run before uploading.
+- [Collectors](https://www.runmirrors.com/docs/collectors): Stream traces from a running agent in TypeScript, Python or Go.
+- [The MCP server](https://www.runmirrors.com/docs/mcp): Drive the whole product from an IDE agent over the hosted endpoint.
+- [The CLI](https://www.runmirrors.com/docs/cli): The mirrors command: login, setup, build, call, and every verb.
+- [API keys](https://www.runmirrors.com/docs/api-keys): Minting, revoking, and which key goes where.
+- [Plans and usage](https://www.runmirrors.com/docs/plans-and-usage): What is metered, the plans, the card, offers and invoicing.
+- [For agents](https://www.runmirrors.com/docs/for-agents): Markdown twins: what an IDE agent reads to use Mirrors without a person.
+- [API reference: introduction](https://www.runmirrors.com/docs/reference/introduction): Base URL, authentication, the error envelope, rate limits, the registry.
+- [API reference: collect](https://www.runmirrors.com/docs/reference/collect): The endpoint collectors post to.
+- [API reference: the tool plane](https://www.runmirrors.com/docs/reference/envs): Wake a twin, open a session, call tools, read the transcript.
+- [API reference: tools and calls](https://www.runmirrors.com/docs/reference/tools): Tool dialects, the call request and result, seeding.
+- [API reference: build](https://www.runmirrors.com/docs/reference/build): The multipart build route, rebuild, and job polling.
+- [Getting started (for agents)](https://www.runmirrors.com/docs/reference/getting-started): Concepts and the end-to-end flow in the verbs' own names.
+- [Accepted trace formats](https://www.runmirrors.com/docs/reference/formats): Every format the transpiler library reads, and the canonical shape.
+- [File inputs](https://www.runmirrors.com/docs/reference/inputs): How a file is passed (inline, URL or upload id) and what each kind does.
+- [Config and overrides](https://www.runmirrors.com/docs/reference/overrides): Knobs, per-tool levers, world overrides and scenarios.
+- [Service verbs](https://www.runmirrors.com/docs/reference/verbs): Every verb with its schemas, MCP tool name and CLI words.
