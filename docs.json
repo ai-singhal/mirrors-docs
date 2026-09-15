@@ -4,9 +4,9 @@
   "name": "Mirrors",
   "description": "Build a runnable twin of the backends your AI agent talks to, replay real sessions against every change, and catch regressions before production.",
   "colors": {
-    "primary": "#0C82CF",
-    "light": "#4FB3E8",
-    "dark": "#0A6BAD"
+    "primary": "#0E3BB9",
+    "light": "#839EF5",
+    "dark": "#112A7C"
   },
   "logo": {
     "light": "/logo.png",

@@ -4,7 +4,7 @@ title: "Config and overrides"
 
 Config is immutable versions per mirror. A change is the next version with who applied it, why, and its review state; a person's change is approved at once, an agent's waits for review (improve_review_list, improve_review_decide). Revert copies an older version forward.
 
-Knobs: simModel (the simulation model, from the allow list), synthesis (whether the build may synthesize implementations), inventionVolume (rows per entity the build may invent; 0 keeps recorded data only).
+Knobs: simModel (the simulation model, from the allow list), synthesis (whether the build may synthesize implementations), worldModelling (false uses deterministic mined entities and operations instead of model inference; omitted enables inference), inventionVolume (rows per entity the build may invent; 0 keeps recorded data only). For a deterministic custom-tool build, set worldModelling and synthesis false and inventionVolume 0.
 
 Per-tool overrides, the levers drift names: pinRung (answer from a fixed rung: provided, custom, workspace, sink, world, synthesized, simulated), editOperation (the world operation behind the tool), editTemplate (the response template as a JSONata expression), customImplementation (JavaScript that answers the tool), addExamples (recorded examples), describeBehavior (a rule in words the simulator honours), ignore.
 
