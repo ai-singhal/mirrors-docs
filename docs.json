@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Mirrors",
-  "description": "Build a runnable twin of the backends your AI agent talks to, replay real sessions against every change, and catch regressions before production.",
+  "description": "Mirrors helps developers maintain production AI agents by turning recurring mistakes into targeted corrections. Current documentation: https://mirrors.dev/docs",
   "colors": {
     "primary": "#0E3BB9",
     "light": "#839EF5",
@@ -11,7 +11,7 @@
   "logo": {
     "light": "/logo.png",
     "dark": "/logo.png",
-    "href": "https://www.runmirrors.com"
+    "href": "https://mirrors.dev"
   },
   "favicon": "/favicon.png",
   "fonts": {
@@ -23,101 +23,73 @@
   "navbar": {
     "links": [
       {
-        "label": "Dashboard",
-        "href": "https://www.runmirrors.com"
+        "label": "Current docs",
+        "href": "https://mirrors.dev/docs"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Get started",
-      "href": "https://www.runmirrors.com/request-access"
+      "label": "Go to mirrors.dev",
+      "href": "https://mirrors.dev"
     }
-  },
-  "contextual": {
-    "options": [
-      "copy",
-      "view",
-      "chatgpt",
-      "claude",
-      "cursor",
-      "vscode"
-    ]
   },
   "footer": {
     "socials": {
-      "website": "https://www.runmirrors.com",
-      "x": "https://x.com/runmirrors",
+      "website": "https://mirrors.dev",
+      "x": "https://x.com/mirrorsdotdev",
       "linkedin": "https://www.linkedin.com/company/runmirrors"
+    }
+  },
+  "seo": {
+    "metatags": {
+      "robots": "noindex"
     }
   },
   "redirects": [
     {
       "source": "/README",
       "destination": "/"
+    },
+    {
+      "source": "/quickstart",
+      "destination": "/"
+    },
+    {
+      "source": "/how-it-works",
+      "destination": "/"
+    },
+    {
+      "source": "/traces",
+      "destination": "/"
+    },
+    {
+      "source": "/collectors",
+      "destination": "/"
+    },
+    {
+      "source": "/cli",
+      "destination": "/"
+    },
+    {
+      "source": "/api-keys",
+      "destination": "/"
+    },
+    {
+      "source": "/plans-and-usage",
+      "destination": "/"
+    },
+    {
+      "source": "/for-agents",
+      "destination": "/"
+    },
+    {
+      "source": "/reference/:slug*",
+      "destination": "/"
     }
   ],
   "navigation": {
-    "tabs": [
-      {
-        "tab": "Documentation",
-        "groups": [
-          {
-            "group": "Get started",
-            "pages": [
-              "index",
-              "quickstart",
-              "how-it-works",
-              "traces"
-            ]
-          },
-          {
-            "group": "Ways in",
-            "pages": [
-              "collectors",
-              "mcp",
-              "cli"
-            ]
-          },
-          {
-            "group": "Account",
-            "pages": [
-              "api-keys",
-              "plans-and-usage"
-            ]
-          },
-          {
-            "group": "Resources",
-            "pages": [
-              "for-agents"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "API reference",
-            "pages": [
-              "reference/introduction",
-              "reference/collect",
-              "reference/envs",
-              "reference/tools",
-              "reference/build"
-            ]
-          },
-          {
-            "group": "Generated reference",
-            "pages": [
-              "reference/formats",
-              "reference/getting-started",
-              "reference/inputs",
-              "reference/overrides",
-              "reference/verbs"
-            ]
-          }
-        ]
-      }
+    "pages": [
+      "index"
     ]
   }
 }
